@@ -1,0 +1,24 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>tetris</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-grid class="">
+    <ion-row class="ion-justify-content-center ion-align-items-end">
+      <ion-col size="auto">
+        <canvas id="tetrisNextShapeId"></canvas>
+      </ion-col>
+    </ion-row>
+    <ion-row class="ion-justify-content-center ion-align-items-end">
+      <ion-col size="auto">
+        <app-board
+          BLOCK_SIZE="40"
+          BOARD_WIDTH="10"
+          BOARD_HEIGHT="15"
+        ></app-board>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
+</ion-content>

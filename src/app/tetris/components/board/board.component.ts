@@ -1,86 +1,135 @@
 import {
   Component,
+  EventEmitter,
   HostListener,
-  Input,
   OnInit,
-  inject,
-  numberAttribute,
+  Output,
 } from '@angular/core';
+import { AlertController, Platform } from '@ionic/angular';
+import { Store } from '@ngrx/store';
+import {
+  incrementLevel,
+  incrementScore,
+} from 'src/app/shared/store/app.actions';
+import { selectLevel, selectScore } from 'src/app/shared/store/app.selectors';
+import { AppState } from 'src/app/shared/store/app.state.interface';
 import { COLOR, ShapeModel } from '../../models';
-import { AlertController } from '@ionic/angular';
-import { TetrisInterface } from '../../services/tetris.interface';
-import { TetrisService } from '../../services';
+import { BlockTypeEnum } from '../../models/block-type.enum';
+import { BoardInterface } from '../../models/board.interface';
+import { DrawableComponent } from '../drawable.component';
 
 @Component({
-  selector: 'app-board',
-  templateUrl: './board.component.html',
-  styleUrls: ['./board.component.scss'],
+    selector: 'app-board',
+    templateUrl: './board.component.html',
+    styleUrls: ['./board.component.scss'],
+    standalone: true,
 })
-export class BoardComponent implements OnInit {
-  @Input({ required: true, transform: numberAttribute })
-  public BLOCK_SIZE!: number;
-  @Input({ required: true, transform: numberAttribute })
-  public BOARD_WIDTH!: number;
-  @Input({ required: true, transform: numberAttribute })
-  public BOARD_HEIGHT!: number;
-  canvas!: HTMLCanvasElement | null;
-  context!: CanvasRenderingContext2D | null | undefined;
-  board: Array<COLOR[]> = [];
-  shape!: ShapeModel;
-  private paddingBlock: number = 2.5;
-  private borderRadiusBlock: number = 4;
+export class BoardComponent extends DrawableComponent implements OnInit {
+  @Output() public gameOverEmit: EventEmitter<void> = new EventEmitter<void>();
+  shape!: ShapeModel | undefined;
+  //aux = true; // TODO refactory
 
-  private tetrisService: TetrisInterface = inject(TetrisService);
   private lastTime: number = 0;
   private dropCounter: number = 0;
+  private audio: HTMLAudioElement = new Audio('assets/audio/game-music.mp3');
+  private SHAPE_TIME_DOWN: number = 1000;
+  private readonly GAME_WIN: number = 6;
 
-  constructor(private alertController: AlertController) {}
+  constructor(
+    private alertController: AlertController,
+    private platform: Platform,
+    private store: Store<AppState>
+  ) {
+    super();
+  }
 
-  ngOnInit() {
-    const nextShapeBoard: HTMLCanvasElement | null =
-      document.querySelector('#tetrisNextShapeId');
+  public async ngOnInit(): Promise<void> {
+    this.startGame();
+    this.increaseLevel();
+    this.winGame();
+    this.onPause();
+  }
+
+  public async startGame(): Promise<void> {
     this.canvas = document.querySelector('#tetrisBoardId');
     this.context = this.canvas?.getContext('2d');
     if (!this.canvas) return;
-    nextShapeBoard!.width = this.BLOCK_SIZE * this.BOARD_WIDTH;
-    this.canvas.width = this.BLOCK_SIZE * this.BOARD_WIDTH;
-    this.canvas.height = this.BLOCK_SIZE * this.BOARD_HEIGHT;
 
-    this.board = this.tetrisService.initBoard(
-      this.BOARD_HEIGHT,
-      this.BOARD_WIDTH
-    );
-    this.shape = this.tetrisService.getRamdonPiece(this.BOARD_WIDTH);
-    this.gameLoop();
+    this.canvas.width = this.board.BLOCK_SIZE * this.board.BOARD_WIDTH;
+    this.canvas.height = this.board.BLOCK_SIZE * this.board.BOARD_HEIGHT;
+
+    this.shape = this.tetrisService.getOneShape(this.board.BOARD_WIDTH);
+    this.tetrisService.pushNextShape();
+    //await this.startGameMusic();
+    this.drawLoop();
   }
 
-  private async gameLoop(time: number = 0): Promise<void> {
+  //TODO refactory for get less code lines
+  private async drawLoop(time: number = 0): Promise<void> {
+    if (!this.isPaused) {
+      this.calcTimeToRenderShape(time);
+      if (
+        this.shape &&
+        this.tetrisService.checkCollition(
+          this.shape.getPosition().y,
+          this.shape.getPosition().x,
+          this.shape.getPiece(),
+          this.board,
+          this.shape.getPieceWidth(),
+          this.board.BOARD_WIDTH
+        )
+      ) {
+        this.shape.getPosition().y--;
+
+        this.SHAPE_TIME_DOWN = 1000;
+        // await this.getShapeTimeToDown();
+
+        this.tetrisService.solidifyPiece(this.shape, this.board.board);
+
+        if (this.tetrisService.gameOver(this.board.board)) {
+          this.finishGame();
+          return;
+        }
+        this.tetrisService.removeCompletedRows(this.board);
+
+        this.shape = this.tetrisService.getOneShape(this.board.BOARD_WIDTH);
+
+        this.tetrisService.pushNextShape();
+        // this.aux = true;
+      }
+      // this.aux = false;
+      this.draw();
+    }
+
+    requestAnimationFrame((time: number = 0) => this.drawLoop(time));
+  }
+
+  private a(time: number) {
+    return new Promise<void>((resolve) => {
+      setTimeout(() => resolve(), time);
+    });
+  }
+
+  private getShapeTimeToDown(): Promise<number> {
+    return new Promise<number>((resolve: (time: number) => void): void => {
+      this.store.select(selectLevel).subscribe((level: number): void => {
+        if (level === this.GAME_WIN) {
+        } else {
+          const time: number = 1000 - level * 100;
+          resolve(time);
+        }
+      });
+    });
+  }
+
+  private calcTimeToRenderShape(time: number): void {
     const deltaTime: number = time - this.lastTime;
     this.lastTime = time;
     this.dropCounter += deltaTime;
-    if (this.dropCounter > 1000) {
+    if (this.dropCounter > this.SHAPE_TIME_DOWN && this.shape) {
       this.shape.getPosition().y++;
       this.dropCounter = 0;
     }
-    if (
-      this.tetrisService.checkCollition(
-        this.shape.getPosition().y,
-        this.shape.getPosition().x,
-        this.shape.getPiece(),
-        this.board
-      )
-    ) {
-      this.shape.getPosition().y--;
-
-      this.tetrisService.solidifyPiece(this.shape, this.board);
-
-      if (this.tetrisService.gameOver(this.board))
-        return await this.finishGame();
-      this.tetrisService.removeCompletedRows(this.board);
-      this.shape = this.tetrisService.getRamdonPiece(this.BOARD_WIDTH);
-    }
-    this.draw();
-    requestAnimationFrame((time: number = 0) => this.gameLoop(time));
   }
 
   private async finishGame(): Promise<void> {
@@ -92,99 +141,164 @@ export class BoardComponent implements OnInit {
 
     await alert.present();
     await alert.onDidDismiss();
-    this.ngOnInit();
+    this.pauseGame();
+    this.gameOverEmit.emit();
   }
 
-  private draw(): void {
+  protected draw(updateHint?: boolean): void {
     if (!this.canvas || !this.context) return;
-    this.drawBoard(this.board);
+    this.drawBoard(this.board.board);
     this.drawPiece(this.shape);
+    this.drawHint(this.shape, this.board);
   }
-  private drawBoard(board: Array<COLOR[]>): void {
-    this.context!.fillStyle = '#000';
-    this.context!.fillRect(0, 0, this.canvas!.width, this.canvas!.height);
-    board.forEach((row: COLOR[], y: number): void => {
-      row.forEach((cell: COLOR, x: number): void => {
-        /* this.context!.strokeStyle = '#a2a2a2';
-        this.context!.strokeRect(
-          x * this.BLOCK_SIZE,
-          y * this.BLOCK_SIZE,
-          this.BLOCK_SIZE,
-          this.BLOCK_SIZE
-        );
-*/
 
-        //gradient with 3D efect for block
-
-        this.context!.fillStyle = cell === COLOR.BLACK ? '#181818' : cell;
-        this.context!.strokeStyle = cell === COLOR.BLACK ? '#181818' : cell;
-        this.context!.beginPath();
-        this.context!.roundRect(
-          x * this.BLOCK_SIZE + this.paddingBlock,
-          y * this.BLOCK_SIZE + this.paddingBlock,
-          this.BLOCK_SIZE - this.paddingBlock * 2,
-          this.BLOCK_SIZE - this.paddingBlock * 2,
-          this.borderRadiusBlock
-        );
-        this.context!.fill();
-        this.context!.stroke();
-      });
+  private drawHint(shape: ShapeModel | undefined, board: BoardInterface): void {
+    this.removeHintBlocks();
+    const yForHint: number = this.getLastYAfterCollition();
+    if (!shape) return;
+    this.tetrisService.forEachItem(shape.getPiece(), (cell, x, y) => {
+      try {
+        if (cell.color !== COLOR.BLACK)
+          board.board[yForHint + y + shape.getPosition().y][
+            x + shape.getPosition().x
+          ] = {
+            color: shape.getColor(),
+            type: BlockTypeEnum.HINT_BLOCK,
+          };
+      } catch (e) {
+        console.error('------Error--->', {
+          index1: {
+            y,
+            y2: shape.getPosition().y,
+            yForHint,
+          },
+          index2: {
+            x,
+            x2: shape.getPosition().x,
+          },
+        });
+      }
     });
   }
 
-  private drawPiece(shape: ShapeModel): void {
-    shape?.getPiece()?.forEach((row, y: number): void => {
-      row.forEach((cell, x: number): void => {
-        /*  if (
-          this.board[y + shape.getPosition().y][x + shape.getPosition().x] ===
-          COLOR.BLACK
-        ) {
-          this.context!.strokeRect(
-            (x + shape.getPosition().x) * this.BLOCK_SIZE,
-            (y + shape.getPosition().y) * this.BLOCK_SIZE,
-            this.BLOCK_SIZE,
-            this.BLOCK_SIZE
-          ); 
-          this.context!.strokeRect(
-            (x + shape.getPosition().x) * this.BLOCK_SIZE,
-            (y + shape.getPosition().y) * this.BLOCK_SIZE,
-            this.BLOCK_SIZE,
-            this.BLOCK_SIZE
-          );
-        }
-        */
-
-        if (cell !== COLOR.BLACK) {
-          this.context!.fillStyle = cell;
-          this.context!.strokeStyle = cell;
-          this.context!.beginPath();
-          this.context!.roundRect(
-            (x + shape.getPosition().x) * this.BLOCK_SIZE + this.paddingBlock,
-            (y + shape.getPosition().y) * this.BLOCK_SIZE + this.paddingBlock,
-            this.BLOCK_SIZE - this.paddingBlock * 2,
-            this.BLOCK_SIZE - this.paddingBlock * 2,
-            this.borderRadiusBlock
-          );
-
-          this.context!.fill();
-          this.context!.stroke();
-        }
-      });
+  private getLastYAfterCollition(): number {
+    let yForHint = 1;
+    while (yForHint <= this.board.BOARD_HEIGHT) {
+      if (
+        this.shape &&
+        this.tetrisService.checkCollition(
+          this.shape.getPosition().y + yForHint,
+          this.shape.getPosition().x,
+          this.shape.getPiece(),
+          this.board,
+          this.shape.getPieceWidth(),
+          this.board.BOARD_WIDTH
+        )
+      ) {
+        yForHint--;
+        break;
+      }
+      yForHint++;
+    }
+    return yForHint;
+  }
+  private removeHintBlocks(): void {
+    this.tetrisService.forEachItem(this.board.board, (cell, x, y) => {
+      if (cell.type === BlockTypeEnum.HINT_BLOCK)
+        this.board.board[y][x] = {
+          color: COLOR.BLACK,
+          type: BlockTypeEnum.EMPTY_BLOCK,
+        };
     });
+  }
+
+  private increaseLevel(): void {
+    this.store.select(selectScore).subscribe((score: number): void => {
+      if (score > 0 && score % 1000 === 0) {
+        this.store.dispatch(incrementLevel());
+      }
+    });
+  }
+
+  private winGame(): void {
+    this.store.select(selectLevel).subscribe((level: number): void => {
+      if (level === this.GAME_WIN) {
+      } else {
+        this.SHAPE_TIME_DOWN -= level * 100;
+      }
+    });
+  }
+
+  private async startGameMusic(): Promise<void> {
+    this.audio.load();
+    this.audio.loop = true;
+    await this.audio.play();
+  }
+
+  public pauseGame(): void {
+    this.audio.pause();
   }
 
   @HostListener('document:keydown', ['$event'])
   public keyEvent(event: KeyboardEvent) {
     console.log('------------->', event);
     this.tetrisService.arrowActions(event.key, this.shape, this.board);
-    this.draw();
+    this.draw(true);
   }
 
-  //HostListener for touch screen
+  @HostListener('mouseup', ['$event'])
+  public mouseup(event: MouseEvent) {
+    const newY: number = this.getCoordinate(event.offsetY);
+    this.SHAPE_TIME_DOWN = 10;
+  }
 
-  @HostListener('document:touchmove', ['$event'])
-  @HostListener('document:touchend', ['$event'])
-  public touchEvent(event: TouchEvent) {
-    console.log('------------->', event);
+  @HostListener('mousemove', ['$event'])
+  public mousemove(event: MouseEvent) {
+    const newX: number = this.getCoordinate(event.offsetX);
+    if (
+      this.shape &&
+      !this.tetrisService.checkCollition(
+        this.shape.getPosition().y,
+        newX,
+        this.shape.getPiece(),
+        this.board,
+        this.shape.getPieceWidth(),
+        this.board.BOARD_WIDTH
+      )
+    ) {
+      this.shape.getPosition().x = newX;
+      this.draw(true);
+    }
+  }
+
+  @HostListener('blur')
+  public onBlur() {
+    //get canvas by id
+    const canvas: HTMLCanvasElement = document.getElementById(
+      'tetrisBoardId'
+    ) as HTMLCanvasElement;
+    //listening blur event
+    canvas.addEventListener('blur', () => {
+      //pause game
+      this.pauseGame();
+    });
+  }
+
+  private getCoordinate(mouse: number): number {
+    return Math.floor(mouse / this.board.BLOCK_SIZE);
+  }
+
+  @HostListener('load')
+  public onResume() {
+    this.platform.resume.subscribe(async () => {
+      alert('Pause event detected');
+    });
+  }
+
+  @HostListener('load')
+  public onPause() {
+    this.platform.pause.subscribe(async () => {
+      alert('Pause event detected');
+    });
   }
 }

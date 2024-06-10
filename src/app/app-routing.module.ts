@@ -9,7 +9,7 @@ const routes: Routes = [
   },
   {
     path: '',
-    redirectTo: 'tetris',
+    redirectTo: 'home',
     pathMatch: 'full',
   },
   {

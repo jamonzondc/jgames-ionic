@@ -6,6 +6,6 @@ export enum COLOR {
   YELLOW = 'yellow',
   ORANGE = 'orange',
   PURPLE = 'purple',
-  PINK = 'pink',
-  BLACK = 'black',
+  PINK = 'magenta',
+  BLACK = '#181818',
 }

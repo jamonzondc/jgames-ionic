@@ -1,4 +1,5 @@
 import { PositionInterfaces } from '../../interfaces';
+import { BlockTypeEnum } from '../block-type.enum';
 import { COLOR } from '../color.enum';
 import { ShapeModel } from './shape.model';
 
@@ -9,9 +10,18 @@ export class JShapeModel extends ShapeModel {
     this.setPieceWidth(2);
     this.setPieceHeight(3);
     this.piece = [
-      [COLOR.BLACK, this.color],
-      [COLOR.BLACK, this.color],
-      [this.color, this.color],
+      [
+        { color: COLOR.BLACK, type: BlockTypeEnum.EMPTY_BLOCK },
+        { color: this.color, type: BlockTypeEnum.COLOR_BLOCK },
+      ],
+      [
+        { color: COLOR.BLACK, type: BlockTypeEnum.EMPTY_BLOCK },
+        { color: this.color, type: BlockTypeEnum.COLOR_BLOCK },
+      ],
+      [
+        { color: this.color, type: BlockTypeEnum.COLOR_BLOCK },
+        { color: this.color, type: BlockTypeEnum.COLOR_BLOCK },
+      ],
     ];
   }
 }

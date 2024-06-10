@@ -1,0 +1,14 @@
+<ion-card [routerLink]="gameData.routerLink">
+  <img [alt]="gameData.name" [src]="gameData.image" />
+  <ion-card-header>
+    <ion-card-subtitle>
+      <ion-badge color="{{ gameData.state | getColorByState }}">{{
+        gameData.state
+      }}</ion-badge>
+    </ion-card-subtitle>
+    <ion-card-title>{{ gameData.name }}</ion-card-title>
+  </ion-card-header>
+  <ion-card-content>
+    {{ gameData.description }}
+  </ion-card-content>
+</ion-card>

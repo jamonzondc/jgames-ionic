@@ -1,0 +1,22 @@
+<ion-toolbar>
+  <ion-title>{{ title }}</ion-title>
+
+  <ion-buttons slot="end">
+    <ion-chip>
+      <ion-icon
+        name="trophy"
+        color="primary"
+        *ngFor="let i of levels"
+      ></ion-icon>
+      <ion-label>{{ "Level " + level }}</ion-label>
+    </ion-chip>
+    <ion-chip>
+      <ion-icon name="star" color="primary"></ion-icon>
+      <ion-label>{{ "Score " + (score$ | async) }}</ion-label>
+    </ion-chip>
+
+    <ion-button (click)="onPauseOrPlay()">
+      <ion-icon name="pause" aria-hidden="true"></ion-icon>
+    </ion-button>
+  </ion-buttons>
+</ion-toolbar>

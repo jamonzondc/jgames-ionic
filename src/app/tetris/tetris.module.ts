@@ -1,16 +1,17 @@
 import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-
-import { IonicModule } from '@ionic/angular';
-
 import { TetrisPageRoutingModule } from './tetris-routing.module';
 
-import { TetrisPage } from './tetris.page';
 import { BoardComponent } from './components/board/board.component';
+import { TetrisPage } from './tetris.page';
+import { NextShapeComponent } from './components/next-shape/next-shape.component';
+import { StoreModule } from '@ngrx/store';
+import { appReducer } from '../shared/store/app.reducer';
 
 @NgModule({
-  imports: [CommonModule, FormsModule, IonicModule, TetrisPageRoutingModule],
-  declarations: [TetrisPage, BoardComponent],
+    imports: [
+    StoreModule.forFeature('game', appReducer),
+    TetrisPageRoutingModule,
+    TetrisPage, BoardComponent, NextShapeComponent,
+],
 })
 export class TetrisPageModule {}

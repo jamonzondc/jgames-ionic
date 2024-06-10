@@ -1,3 +1,9 @@
+#wallpaper {
+  height: 100%;
+  background: black;
+  background-size: cover;
+}
+
 #tetrisNextShapeId,
 #tetrisBoardId,
 #dashboardId {
@@ -5,10 +11,36 @@
   border-radius: 4px;
 }
 
-#tetrisNextShapeId {
-}
-
 #dashboardId {
   width: 100vw;
   padding: 0 5px 0 5px;
+}
+
+.tetris-color-title {
+  font-size: 84px;
+  font-family: American Typewriter;
+  font-weight: 900;
+}
+
+.t-ofTetris {
+  color: red;
+}
+.e-ofTetris {
+  color: rgb(255, 128, 0);
+}
+.tt-ofTetris {
+  color: rgb(255, 200, 0);
+}
+.r-ofTetris {
+  color: green;
+}
+.i-ofTetris {
+  color: cyan;
+}
+.s-ofTetris {
+  color: magenta;
+}
+
+.padding-top {
+  padding-top: 20px;
 }

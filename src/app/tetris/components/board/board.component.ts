@@ -7,7 +7,7 @@ import {
   Output,
   inject,
 } from '@angular/core';
-import { AlertController, Platform } from '@ionic/angular';
+import { AlertController } from '@ionic/angular';
 import { Store } from '@ngrx/store';
 import {
   incrementLevel,
@@ -40,6 +40,8 @@ export class BoardComponent
   private audioService: AudioService = inject(AudioService);
   private SHAPE_TIME_DOWN: number = 1000;
   private isClearingRows: boolean = false;
+  /** Set when the page comes back, to drop the elapsed background time. */
+  private resumeTiming: boolean = false;
   private readonly GAME_WIN: number = 6;
 
   // Touch gesture state
@@ -76,7 +78,6 @@ export class BoardComponent
 
   constructor(
     private alertController: AlertController,
-    private platform: Platform,
     private store: Store<AppState>
   ) {
     super();
@@ -91,7 +92,6 @@ export class BoardComponent
     this.startGame();
     this.increaseLevel();
     this.winGame();
-    this.onPause();
   }
 
   public async startGame(): Promise<void> {
@@ -181,6 +181,13 @@ export class BoardComponent
   }
 
   private calcTimeToRenderShape(time: number): void {
+    if (this.resumeTiming) {
+      this.resumeTiming = false;
+      this.lastTime = time;
+      this.dropCounter = 0;
+      return;
+    }
+
     const deltaTime: number = time - this.lastTime;
     this.lastTime = time;
     this.dropCounter += deltaTime;
@@ -591,17 +598,13 @@ export class BoardComponent
     return Math.floor(mouse / this.board.BLOCK_SIZE);
   }
 
-  @HostListener('load')
-  public onResume() {
-    this.platform.resume.subscribe(async () => {
-      alert('Pause event detected');
-    });
-  }
-
-  @HostListener('load')
-  public onPause() {
-    this.platform.pause.subscribe(async () => {
-      alert('Pause event detected');
-    });
+  /**
+   * Coming back from another app, the animation loop has been frozen the whole
+   * time, so the first frame back reports every one of those seconds at once.
+   * Without this the piece would lurch downwards on return.
+   */
+  @HostListener('document:visibilitychange')
+  public onVisibilityChange(): void {
+    if (!document.hidden) this.resumeTiming = true;
   }
 }

@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { AlertController, Platform } from '@ionic/angular';
+import { AlertController } from '@ionic/angular';
 import { Store } from '@ngrx/store';
 import { of } from 'rxjs';
 import { TShapeModel } from '../../models';
@@ -42,7 +42,6 @@ describe('BoardComponent touch gestures', () => {
         TetrisService,
         { provide: Store, useValue: { select: () => of(0), dispatch: () => undefined } },
         { provide: AlertController, useValue: { create: () => Promise.resolve({}) } },
-        { provide: Platform, useValue: { pause: of(), resume: of() } },
       ],
     });
 
@@ -51,11 +50,7 @@ describe('BoardComponent touch gestures', () => {
 
     component = TestBed.runInInjectionContext(
       () =>
-        new BoardComponent(
-          TestBed.inject(AlertController),
-          TestBed.inject(Platform),
-          TestBed.inject(Store)
-        )
+        new BoardComponent(TestBed.inject(AlertController), TestBed.inject(Store))
     );
     component.board = board;
     component.isPaused = false;

@@ -2,20 +2,20 @@
   <ion-title>{{ title }}</ion-title>
 
   <ion-buttons slot="end">
-    <ion-chip>
+    <ion-chip class="stat-chip">
       <ion-icon
         name="trophy"
-        color="primary"
+        color="warning"
         *ngFor="let i of levels"
       ></ion-icon>
-      <ion-label>{{ "Level " + level }}</ion-label>
+      <ion-label>Lv <span class="stat-value">{{ level }}</span></ion-label>
     </ion-chip>
-    <ion-chip>
+    <ion-chip class="stat-chip">
       <ion-icon name="star" color="primary"></ion-icon>
-      <ion-label>{{ "Score " + (score$ | async) }}</ion-label>
+      <ion-label class="stat-value">{{ score$ | async }}</ion-label>
     </ion-chip>
 
-    <ion-button (click)="onPauseOrPlay()">
+    <ion-button class="pause-button" (click)="onPauseOrPlay()">
       <ion-icon name="pause" aria-hidden="true"></ion-icon>
     </ion-button>
   </ion-buttons>

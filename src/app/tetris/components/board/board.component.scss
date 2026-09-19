@@ -1,16 +1,33 @@
+:host {
+  display: block;
+}
+
+.canvasWrapper {
+  padding: 10px;
+  border-radius: 18px;
+  background: linear-gradient(
+    160deg,
+    rgba(148, 163, 184, 0.16),
+    rgba(15, 23, 42, 0.5)
+  );
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 18px 40px -18px rgba(8, 11, 24, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  touch-action: none;
+}
+
 #tetrisBoardId {
-  border: 2px solid black;
-  border-radius: 4px;
+  display: block;
+  // Scales down on a phone while keeping the board's aspect ratio. The touch
+  // handlers read the painted size, so gestures follow the scaling.
+  width: min(88vw, 340px);
+  height: auto;
+  border-radius: 12px;
+  background: #070b16;
   // Gestures on the board are ours: no scrolling, pinch-zoom, double-tap zoom
   // or blue tap highlight stealing them on a touch device.
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   -webkit-user-select: none;
-}
-
-.canvasWrapper {
-  padding: 6px;
-  border-radius: 0 0 6px 6px;
-  touch-action: none;
 }

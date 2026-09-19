@@ -15,7 +15,6 @@ import { selectLevel, selectScore } from 'src/app/shared/store/app.selectors';
 import { AppState } from 'src/app/shared/store/app.state.interface';
 import { COLOR, ShapeModel } from '../../models';
 import { BlockTypeEnum } from '../../models/block-type.enum';
-import { BlockInterface } from '../../models/block.interface';
 import { BoardInterface } from '../../models/board.interface';
 import { DrawableComponent } from '../drawable.component';
 
@@ -39,19 +38,19 @@ export class BoardComponent extends DrawableComponent implements OnInit {
   // Touch gesture state
   private touchStart: { x: number; y: number; time: number } | undefined;
   private touchMoved: boolean = false;
+  private touchAxis: 'x' | 'y' | undefined;
   private shapeXOnTouchStart: number = 0;
-  private lastTapTime: number = 0;
+  private shapeYOnTouchStart: number = 0;
   private lastTouchTime: number = 0;
-  private lastRotation:
-    | { piece: Array<BlockInterface[]>; width: number; height: number }
-    | undefined;
+  private previousSample: { y: number; time: number } = { y: 0, time: 0 };
+  private latestSample: { y: number; time: number } = { y: 0, time: 0 };
 
   /** A press longer than this is a hold, not a tap. */
   private readonly TAP_MAX_MS: number = 300;
   /** A finger wandering further than this is dragging, not tapping. */
   private readonly TAP_MAX_MOVE_PX: number = 12;
-  /** Gap below which a second tap counts as a double tap. */
-  private readonly DOUBLE_TAP_MS: number = 280;
+  /** Downwards speed at which a drag becomes a flick, in screen px per ms. */
+  private readonly FLICK_SPEED_PX_PER_MS: number = 0.5;
   /** How long mouse events stay ignored after a touch. */
   private readonly MOUSE_AFTER_TOUCH_MS: number = 700;
 
@@ -271,9 +270,13 @@ export class BoardComponent extends DrawableComponent implements OnInit {
    * replacing them, so a desktop keeps behaving exactly as before and a hybrid
    * laptop can use either input.
    *
-   * - drag         -> moves the shape sideways, one column at a time
-   * - tap          -> rotates
-   * - double tap   -> hard drop
+   * - drag sideways   -> moves the shape, one column at a time
+   * - drag down       -> soft drop, one row at a time
+   * - flick down      -> hard drop
+   * - tap             -> rotates
+   *
+   * A gesture commits to an axis as soon as it has moved far enough to tell
+   * them apart, so a sloppy sideways drag never drops the shape by accident.
    */
   @HostListener('touchstart', ['$event'])
   public onTouchStart(event: TouchEvent): void {
@@ -284,7 +287,11 @@ export class BoardComponent extends DrawableComponent implements OnInit {
     const touch: Touch = event.touches[0];
     this.touchStart = { x: touch.clientX, y: touch.clientY, time: Date.now() };
     this.touchMoved = false;
+    this.touchAxis = undefined;
     this.shapeXOnTouchStart = this.shape ? this.shape.getPosition().x : 0;
+    this.shapeYOnTouchStart = this.shape ? this.shape.getPosition().y : 0;
+    this.previousSample = { y: touch.clientY, time: Date.now() };
+    this.latestSample = { y: touch.clientY, time: Date.now() };
   }
 
   @HostListener('touchmove', ['$event'])
@@ -300,10 +307,24 @@ export class BoardComponent extends DrawableComponent implements OnInit {
     // Anything past this is a drag, so it must not rotate on release.
     if (Math.hypot(deltaX, deltaY) > this.TAP_MAX_MOVE_PX) this.touchMoved = true;
 
-    const columns: number = Math.round(
-      (deltaX * this.getBoardScale()) / this.board.BLOCK_SIZE
-    );
-    this.moveShapeToColumn(this.shapeXOnTouchStart + columns);
+    // Keep the last two samples so the release can measure how fast the finger
+    // was actually moving, rather than averaging in any pause before it.
+    this.previousSample = this.latestSample;
+    this.latestSample = { y: touch.clientY, time: this.lastTouchTime };
+
+    if (!this.touchAxis && this.touchMoved) {
+      this.touchAxis = Math.abs(deltaX) >= Math.abs(deltaY) ? 'x' : 'y';
+    }
+
+    if (this.touchAxis === 'x') {
+      this.moveShapeToColumn(
+        this.shapeXOnTouchStart + this.toBlocks(deltaX)
+      );
+    } else if (this.touchAxis === 'y' && deltaY > 0) {
+      // Downwards only: dragging back up must not pull the shape up.
+      this.moveShapeToRow(this.shapeYOnTouchStart + this.toBlocks(deltaY));
+    }
+
     this.draw(true);
   }
 
@@ -315,24 +336,10 @@ export class BoardComponent extends DrawableComponent implements OnInit {
     if (this.isPaused || !touchStart) return;
     event.preventDefault();
 
-    const isTap: boolean =
-      !this.touchMoved && this.lastTouchTime - touchStart.time < this.TAP_MAX_MS;
-    if (!isTap) return;
-
-    const isDoubleTap: boolean =
-      this.lastTapTime > 0 &&
-      this.lastTouchTime - this.lastTapTime < this.DOUBLE_TAP_MS;
-
-    if (isDoubleTap) {
-      // The first tap already rotated, so undo it before dropping: that keeps
-      // a single tap instant instead of making every rotation wait to see
-      // whether a second tap is coming.
-      this.undoLastRotation();
-      this.hardDrop();
-      this.lastTapTime = 0;
-    } else {
+    if (this.isTap(touchStart)) {
       this.rotateShape();
-      this.lastTapTime = this.lastTouchTime;
+    } else if (this.touchAxis === 'y' && this.isDownwardsFlick()) {
+      this.hardDrop();
     }
 
     this.draw(true);
@@ -342,6 +349,24 @@ export class BoardComponent extends DrawableComponent implements OnInit {
   public onTouchCancel(): void {
     this.lastTouchTime = Date.now();
     this.touchStart = undefined;
+    this.touchAxis = undefined;
+  }
+
+  private isTap(touchStart: { time: number }): boolean {
+    return !this.touchMoved && this.lastTouchTime - touchStart.time < this.TAP_MAX_MS;
+  }
+
+  /** A quick downwards flick, measured over the last stretch of the gesture. */
+  private isDownwardsFlick(): boolean {
+    const distance: number = this.latestSample.y - this.previousSample.y;
+    const elapsed: number = this.latestSample.time - this.previousSample.time;
+    if (distance <= 0 || elapsed <= 0) return false;
+    return distance / elapsed > this.FLICK_SPEED_PX_PER_MS;
+  }
+
+  /** Finger travel in screen pixels -> whole board cells. */
+  private toBlocks(distance: number): number {
+    return Math.round((distance * this.getBoardScale()) / this.board.BLOCK_SIZE);
   }
 
   private moveShapeToColumn(targetX: number): void {
@@ -360,22 +385,18 @@ export class BoardComponent extends DrawableComponent implements OnInit {
     }
   }
 
-  private rotateShape(): void {
+  private moveShapeToRow(targetY: number): void {
     if (!this.shape) return;
-    this.lastRotation = {
-      piece: this.shape.getPiece(),
-      width: this.shape.getPieceWidth(),
-      height: this.shape.getPieceHeight(),
-    };
-    this.tetrisService.arrowUp(this.shape, this.board);
+    while (this.shape.getPosition().y < targetY) {
+      const currentY: number = this.shape.getPosition().y;
+      this.tetrisService.arrowDown(this.shape, this.board);
+      if (this.shape.getPosition().y === currentY) return;
+    }
   }
 
-  private undoLastRotation(): void {
-    if (!this.shape || !this.lastRotation) return;
-    this.shape.setPiece(this.lastRotation.piece);
-    this.shape.setPieceWidth(this.lastRotation.width);
-    this.shape.setPieceHeight(this.lastRotation.height);
-    this.lastRotation = undefined;
+  private rotateShape(): void {
+    if (!this.shape) return;
+    this.tetrisService.arrowUp(this.shape, this.board);
   }
 
   private hardDrop(): void {

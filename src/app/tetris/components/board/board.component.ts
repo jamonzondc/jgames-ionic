@@ -2,8 +2,10 @@ import {
   Component,
   EventEmitter,
   HostListener,
+  OnChanges,
   OnInit,
   Output,
+  inject,
 } from '@angular/core';
 import { AlertController, Platform } from '@ionic/angular';
 import { Store } from '@ngrx/store';
@@ -16,6 +18,7 @@ import { AppState } from 'src/app/shared/store/app.state.interface';
 import { COLOR, ShapeModel } from '../../models';
 import { BlockTypeEnum } from '../../models/block-type.enum';
 import { BoardInterface } from '../../models/board.interface';
+import { AudioService } from 'src/app/shared/services/audio.service';
 import { DrawableComponent } from '../drawable.component';
 
 @Component({
@@ -24,15 +27,19 @@ import { DrawableComponent } from '../drawable.component';
     styleUrls: ['./board.component.scss'],
     standalone: true,
 })
-export class BoardComponent extends DrawableComponent implements OnInit {
+export class BoardComponent
+  extends DrawableComponent
+  implements OnInit, OnChanges
+{
   @Output() public gameOverEmit: EventEmitter<void> = new EventEmitter<void>();
   shape!: ShapeModel | undefined;
   //aux = true; // TODO refactory
 
   private lastTime: number = 0;
   private dropCounter: number = 0;
-  private audio: HTMLAudioElement = new Audio('assets/audio/game-music.mp3');
+  private audioService: AudioService = inject(AudioService);
   private SHAPE_TIME_DOWN: number = 1000;
+  private isClearingRows: boolean = false;
   private readonly GAME_WIN: number = 6;
 
   // Touch gesture state
@@ -62,6 +69,11 @@ export class BoardComponent extends DrawableComponent implements OnInit {
     super();
   }
 
+  public ngOnChanges(): void {
+    // isPaused is an input, so the pause menu opening reaches us as a change.
+    this.audioService.setGameRunning(!this.isPaused);
+  }
+
   public async ngOnInit(): Promise<void> {
     this.startGame();
     this.increaseLevel();
@@ -77,15 +89,20 @@ export class BoardComponent extends DrawableComponent implements OnInit {
     this.canvas.width = this.board.BLOCK_SIZE * this.board.BOARD_WIDTH;
     this.canvas.height = this.board.BLOCK_SIZE * this.board.BOARD_HEIGHT;
 
+    this.isClearingRows = false;
     this.shape = this.tetrisService.getOneShape(this.board.BOARD_WIDTH);
     this.tetrisService.pushNextShape();
-    //await this.startGameMusic();
+    // The soundtrack itself only starts once the player touches something.
+    this.audioService.setGameRunning(true);
     this.drawLoop();
   }
 
   //TODO refactory for get less code lines
   private async drawLoop(time: number = 0): Promise<void> {
-    if (!this.isPaused) {
+    // While rows are being cleared the board is mid-edit: no piece falls and
+    // no new one appears, so a landing cannot start a second clear on top of
+    // the first. Keep painting, though — the clear is animated.
+    if (!this.isPaused && !this.isClearingRows) {
       this.calcTimeToRenderShape(time);
       if (
         this.shape &&
@@ -104,23 +121,37 @@ export class BoardComponent extends DrawableComponent implements OnInit {
         // await this.getShapeTimeToDown();
 
         this.tetrisService.solidifyPiece(this.shape, this.board.board);
+        this.audioService.lock();
 
         if (this.tetrisService.gameOver(this.board.board)) {
           this.finishGame();
           return;
         }
-        this.tetrisService.removeCompletedRows(this.board);
 
-        this.shape = this.tetrisService.getOneShape(this.board.BOARD_WIDTH);
-
-        this.tetrisService.pushNextShape();
+        this.clearRowsThenNextShape();
         // this.aux = true;
       }
       // this.aux = false;
-      this.draw();
     }
 
+    if (!this.isPaused) this.draw();
+
     requestAnimationFrame((time: number = 0) => this.drawLoop(time));
+  }
+
+  /**
+   * Clearing rows is animated, so it spans many frames. The piece is dropped
+   * first and the next one only arrives once the board has settled.
+   */
+  private clearRowsThenNextShape(): void {
+    this.shape = undefined;
+    this.isClearingRows = true;
+
+    this.tetrisService.removeCompletedRows(this.board).then((): void => {
+      this.isClearingRows = false;
+      this.shape = this.tetrisService.getOneShape(this.board.BOARD_WIDTH);
+      this.tetrisService.pushNextShape();
+    });
   }
 
   private a(time: number) {
@@ -152,6 +183,7 @@ export class BoardComponent extends DrawableComponent implements OnInit {
   }
 
   private async finishGame(): Promise<void> {
+    this.audioService.gameOver();
     const alert = await this.alertController.create({
       header: 'Game over',
       message: 'Try again!!!',
@@ -234,6 +266,7 @@ export class BoardComponent extends DrawableComponent implements OnInit {
   private increaseLevel(): void {
     this.store.select(selectScore).subscribe((score: number): void => {
       if (score > 0 && score % 1000 === 0) {
+        this.audioService.levelUp();
         this.store.dispatch(incrementLevel());
       }
     });
@@ -248,19 +281,14 @@ export class BoardComponent extends DrawableComponent implements OnInit {
     });
   }
 
-  private async startGameMusic(): Promise<void> {
-    this.audio.load();
-    this.audio.loop = true;
-    await this.audio.play();
-  }
-
   public pauseGame(): void {
-    this.audio.pause();
+    this.audioService.setGameRunning(false);
   }
 
   @HostListener('document:keydown', ['$event'])
   public keyEvent(event: KeyboardEvent) {
     console.log('------------->', event);
+    this.audioService.unlock();
     this.tetrisService.arrowActions(event.key, this.shape, this.board);
     this.draw(true);
   }
@@ -283,6 +311,7 @@ export class BoardComponent extends DrawableComponent implements OnInit {
     this.lastTouchTime = Date.now();
     if (this.isPaused || event.touches.length !== 1) return;
     event.preventDefault();
+    this.audioService.unlock();
 
     const touch: Touch = event.touches[0];
     this.touchStart = { x: touch.clientX, y: touch.clientY, time: Date.now() };
@@ -401,6 +430,7 @@ export class BoardComponent extends DrawableComponent implements OnInit {
 
   private hardDrop(): void {
     if (!this.shape) return;
+    this.audioService.hardDrop();
     this.shape.getPosition().y += this.getLastYAfterCollition();
     // Let the next frame push it one row further so it collides and solidifies
     // right away instead of hanging there for a whole drop interval.
@@ -428,6 +458,7 @@ export class BoardComponent extends DrawableComponent implements OnInit {
   @HostListener('mouseup', ['$event'])
   public mouseup(event: MouseEvent) {
     if (this.isSyntheticMouseEvent()) return;
+    this.audioService.unlock();
     const newY: number = this.getCoordinate(event.offsetY);
     this.SHAPE_TIME_DOWN = 10;
   }

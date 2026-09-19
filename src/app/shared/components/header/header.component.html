@@ -15,7 +15,22 @@
       <ion-label class="stat-value">{{ score$ | async }}</ion-label>
     </ion-chip>
 
-    <ion-button class="pause-button" (click)="onPauseOrPlay()">
+    <ion-button
+      class="pause-button"
+      [attr.aria-label]="isMuted ? 'Activar sonido' : 'Silenciar'"
+      (click)="onToggleSound()"
+    >
+      <ion-icon
+        [name]="isMuted ? 'volume-mute' : 'volume-high'"
+        aria-hidden="true"
+      ></ion-icon>
+    </ion-button>
+
+    <ion-button
+      class="pause-button"
+      aria-label="Pausa"
+      (click)="onPauseOrPlay()"
+    >
       <ion-icon name="pause" aria-hidden="true"></ion-icon>
     </ion-button>
   </ion-buttons>

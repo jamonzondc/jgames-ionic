@@ -224,6 +224,53 @@ describe('BoardComponent touch gestures', () => {
     expect(component.shape!.getPosition().x).toBe(1);
   });
 
+  it('does not drop the next piece when its own piece settles mid-gesture', () => {
+    // The drag starts on one piece; it lands and is replaced before the
+    // finger lifts. The release must not carry over to the newcomer.
+    component.onTouchStart(touchEvent(100, 100));
+    jest.advanceTimersByTime(20);
+    component.onTouchMove(touchEvent(100, 200));
+
+    const newcomer = new TShapeModel();
+    newcomer.setPosition({ x: 4, y: 0 });
+    component.shape = newcomer;
+
+    jest.advanceTimersByTime(20);
+    component.onTouchMove(touchEvent(100, 340));
+    component.onTouchEnd(releaseEvent());
+
+    expect(newcomer.getPosition().y).toBe(0);
+    expect(newcomer.getPosition().x).toBe(4);
+  });
+
+  it('does not rotate the next piece when a tap lands between pieces', () => {
+    component.onTouchStart(touchEvent(100, 300));
+
+    const newcomer = new TShapeModel();
+    newcomer.setPosition({ x: 4, y: 0 });
+    const before = newcomer.getPiece();
+    component.shape = newcomer;
+
+    jest.advanceTimersByTime(50);
+    component.onTouchEnd(releaseEvent());
+
+    expect(newcomer.getPiece()).toBe(before);
+  });
+
+  it('ignores a gesture that started while no piece was in play', () => {
+    component.shape = undefined;
+    component.onTouchStart(touchEvent(100, 300));
+
+    const newcomer = new TShapeModel();
+    newcomer.setPosition({ x: 4, y: 0 });
+    component.shape = newcomer;
+
+    jest.advanceTimersByTime(50);
+    component.onTouchEnd(releaseEvent());
+
+    expect(newcomer.getPosition().y).toBe(0);
+  });
+
   it('ignores gestures while the game is paused', () => {
     component.isPaused = true;
 

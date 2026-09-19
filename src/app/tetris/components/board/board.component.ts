@@ -48,6 +48,13 @@ export class BoardComponent
   private touchAxis: 'x' | 'y' | undefined;
   private shapeXOnTouchStart: number = 0;
   private shapeYOnTouchStart: number = 0;
+  /**
+   * The piece the gesture started on. A drag can outlive its piece — the piece
+   * settles mid-gesture and the next one takes its place — and without this
+   * the release would drop that new piece too, costing the player a piece
+   * they never played.
+   */
+  private gestureShape: ShapeModel | undefined;
   private lastTouchTime: number = 0;
   private previousSample: { y: number; time: number } = { y: 0, time: 0 };
   private latestSample: { y: number; time: number } = { y: 0, time: 0 };
@@ -321,6 +328,7 @@ export class BoardComponent
     this.touchStart = { x: touch.clientX, y: touch.clientY, time: Date.now() };
     this.touchMoved = false;
     this.touchAxis = undefined;
+    this.gestureShape = this.shape;
     this.shapeXOnTouchStart = this.shape ? this.shape.getPosition().x : 0;
     this.shapeYOnTouchStart = this.shape ? this.shape.getPosition().y : 0;
     this.previousSample = { y: touch.clientY, time: Date.now() };
@@ -332,6 +340,7 @@ export class BoardComponent
     this.lastTouchTime = Date.now();
     if (this.isPaused || !this.touchStart || event.touches.length !== 1) return;
     event.preventDefault();
+    if (!this.gestureOwnsShape()) return;
 
     const touch: Touch = event.touches[0];
     const deltaX: number = touch.clientX - this.touchStart.x;
@@ -369,6 +378,8 @@ export class BoardComponent
     if (this.isPaused || !touchStart) return;
     event.preventDefault();
 
+    if (!this.gestureOwnsShape()) return;
+
     if (this.isTap(touchStart)) {
       this.rotateShape();
     } else if (this.touchAxis === 'y' && this.isDownwardsFlick()) {
@@ -383,6 +394,12 @@ export class BoardComponent
     this.lastTouchTime = Date.now();
     this.touchStart = undefined;
     this.touchAxis = undefined;
+    this.gestureShape = undefined;
+  }
+
+  /** False once the piece the gesture began on has settled. */
+  private gestureOwnsShape(): boolean {
+    return !!this.shape && this.shape === this.gestureShape;
   }
 
   private isTap(touchStart: { time: number }): boolean {

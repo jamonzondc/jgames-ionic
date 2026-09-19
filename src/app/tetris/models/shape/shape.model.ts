@@ -43,7 +43,11 @@ export abstract class ShapeModel {
   }
 
   public setPiece(piece: Array<BlockInterface[]>): Array<BlockInterface[]> {
-    return (this.piece = piece);
+    this.piece = piece;
+    // Derived here so the declared size can never drift from the matrix.
+    this.pieceWidth = piece[0].length;
+    this.pieceHeight = piece.length;
+    return this.piece;
   }
 
   public rotate(): Array<BlockInterface[]> {
@@ -62,8 +66,8 @@ export abstract class ShapeModel {
       }
     }
 
-    this.pieceWidth = rotatedMatrix[0].length;
-    this.pieceHeight = rotatedMatrix.length;
+    // No mutation here: callers inspect a rotation before deciding to apply
+    // it, and a refused rotation used to leave the size wrong.
     return rotatedMatrix;
   }
 }

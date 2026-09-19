@@ -203,6 +203,33 @@ export class TetrisService implements TetrisInterface {
     });
   }
 
+  /**
+   * A piece settles only when it cannot fall one more row. Touching a wall is
+   * not landing, so a side collision no longer freezes a piece in mid-air.
+   */
+  public hasLanded(shape: ShapeModel, board: BoardInterface): boolean {
+    return this.checkCollition(
+      shape.getPosition().y + 1,
+      shape.getPosition().x,
+      shape.getPiece(),
+      board,
+      shape.getPieceWidth(),
+      board.BOARD_WIDTH
+    );
+  }
+
+  /** Whether a piece can occupy the square it is about to appear in. */
+  public fits(shape: ShapeModel, board: BoardInterface): boolean {
+    return !this.checkCollition(
+      shape.getPosition().y,
+      shape.getPosition().x,
+      shape.getPiece(),
+      board,
+      shape.getPieceWidth(),
+      board.BOARD_WIDTH
+    );
+  }
+
   public gameOver(board: Array<BlockInterface[]>): boolean {
     return board[0].some(
       (cell: BlockInterface): boolean => cell.type === BlockTypeEnum.COLOR_BLOCK

@@ -21,10 +21,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
@@ -35,6 +35,10 @@ jobs:
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v5
+        with:
+          # Habilita Pages (build_type=workflow) si aún no lo está en el repo,
+          # en lugar de fallar con "Get Pages site failed".
+          enablement: true
 
       - name: Build
         env:

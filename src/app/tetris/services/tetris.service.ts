@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { incrementScore } from 'src/app/shared/store/app.actions';
@@ -17,6 +17,7 @@ import { BlockTypeEnum } from '../models/block-type.enum';
 import { BlockInterface } from '../models/block.interface';
 import { BoardInterface } from '../models/board.interface';
 import { COLOR } from '../models/color.enum';
+import { AudioService } from 'src/app/shared/services/audio.service';
 import { TetrisInterface } from './tetris.interface';
 
 @Injectable({
@@ -24,9 +25,12 @@ import { TetrisInterface } from './tetris.interface';
 })
 export class TetrisService implements TetrisInterface {
   private shapes: Array<ShapeModel> = [];
+  /** Tail of the queued row-clearing animations. */
+  private clearing: Promise<void> = Promise.resolve();
   private _shapes!: BehaviorSubject<Array<ShapeModel>>;
   private shapes$!: Observable<Array<ShapeModel>>;
   private readonly numeberOfRotatationInPiece: number = 4;
+  private audioService: AudioService = inject(AudioService);
   private readonly pieces: any[] = [
     //TODO ver algun Utility Type
     IShapeModel,
@@ -99,8 +103,7 @@ export class TetrisService implements TetrisInterface {
       )
     )
       shape.setPiece(shape.rotate());
-    const sound = new Audio('assets/audio/rotate-1.mp3');
-    sound.play();
+    this.audioService.rotate();
   }
 
   public arrowDown(shape: ShapeModel | undefined, board: BoardInterface): void {
@@ -129,8 +132,10 @@ export class TetrisService implements TetrisInterface {
         shape.getPieceWidth(),
         board.BOARD_WIDTH
       )
-    )
+    ) {
       shape.getPosition().x--;
+      this.audioService.move();
+    }
   }
 
   public arrowRight(
@@ -147,8 +152,10 @@ export class TetrisService implements TetrisInterface {
         shape.getPieceWidth(),
         board.BOARD_WIDTH
       )
-    )
+    ) {
       shape.getPosition().x++;
+      this.audioService.move();
+    }
   }
 
   //TODO si hay colicion solidifica revisar esto, al intentar rotar como hay colicion
@@ -209,7 +216,29 @@ export class TetrisService implements TetrisInterface {
   }
 
   //TODO refactorizar menos lineas y hacer split
-  public async removeCompletedRows(board: BoardInterface): Promise<void> {
+  /**
+   * Clearing is animated, so a call spans hundreds of milliseconds. Two of
+   * them running at once would splice rows out from under each other and
+   * leave blocks floating, so they are queued instead.
+   */
+  public removeCompletedRows(board: BoardInterface): Promise<void> {
+    this.clearing = this.clearing
+      .catch((): void => undefined)
+      .then((): Promise<void> => this.clearCompletedRows(board));
+    return this.clearing;
+  }
+
+  private async clearCompletedRows(board: BoardInterface): Promise<void> {
+    // Counted up front so the fanfare matches the whole batch, not the first
+    // row of it.
+    const fullRows: number = board.board.filter((row: BlockInterface[]): boolean =>
+      row.every(
+        (cell: BlockInterface): boolean =>
+          cell.type === BlockTypeEnum.COLOR_BLOCK
+      )
+    ).length;
+    if (fullRows > 0) this.audioService.lineClear(fullRows);
+
     for (let y = board.board.length - 1; y >= 0; y--) {
       const row: BlockInterface[] = board.board[y];
       if (

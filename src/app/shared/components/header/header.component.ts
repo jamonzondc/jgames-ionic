@@ -1,10 +1,18 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnInit,
+  Output,
+  inject,
+} from '@angular/core';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
 import { selectLevel, selectScore } from '../../store/app.selectors';
 import { AppState } from '../../store/app.state.interface';
 import { NgFor, AsyncPipe } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
+import { AudioService } from '../../services/audio.service';
 
 @Component({
     selector: 'app-header',
@@ -26,10 +34,14 @@ export class HeaderComponent implements OnInit {
   score$!: Observable<number>;
   level: number = 0;
   levels: Array<number> = [];
+  public isMuted: boolean = false;
+
+  private audioService: AudioService = inject(AudioService);
 
   constructor(private store: Store<AppState>) {}
 
   public ngOnInit(): void {
+    this.isMuted = this.audioService.isMuted();
     this.score$ = this.store.select(selectScore);
     this.store.select(selectLevel).subscribe({
       next: (level: number) => {
@@ -41,5 +53,9 @@ export class HeaderComponent implements OnInit {
 
   public onPauseOrPlay(): void {
     this.onPauseGame.emit();
+  }
+
+  public onToggleSound(): void {
+    this.isMuted = this.audioService.toggleMute();
   }
 }

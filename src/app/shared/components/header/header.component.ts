@@ -10,7 +10,7 @@ import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
 import { selectLevel, selectScore } from '../../store/app.selectors';
 import { AppState } from '../../store/app.state.interface';
-import { NgFor, AsyncPipe } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { AudioService } from '../../services/audio.service';
 
@@ -21,7 +21,6 @@ import { AudioService } from '../../services/audio.service';
     standalone: true,
     imports: [
         IonicModule,
-        NgFor,
         AsyncPipe,
     ],
 })
@@ -33,7 +32,6 @@ export class HeaderComponent implements OnInit {
   @Output() public onPauseGame: EventEmitter<void> = new EventEmitter<void>();
   score$!: Observable<number>;
   level: number = 0;
-  levels: Array<number> = [];
   public isMuted: boolean = false;
 
   private audioService: AudioService = inject(AudioService);
@@ -46,7 +44,6 @@ export class HeaderComponent implements OnInit {
     this.store.select(selectLevel).subscribe({
       next: (level: number) => {
         this.level = level;
-        this.levels = Array(level).fill(0);
       },
     });
   }

@@ -2,16 +2,20 @@ ion-toolbar {
   --background: rgba(11, 16, 32, 0.72);
   --color: #e2e8f0;
   --border-width: 0;
-  --min-height: 56px;
+  --min-height: 54px;
+  --padding-start: 10px;
+  --padding-end: 6px;
   backdrop-filter: blur(14px);
   border-bottom: 1px solid rgba(148, 163, 184, 0.12);
 }
 
-ion-title {
+.app-title {
+  padding: 0 4px;
   font-weight: 700;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  font-size: 15px;
+  font-size: 14px;
+  white-space: nowrap;
   background: linear-gradient(135deg, #a5b4fc, #22d3ee);
   background-clip: text;
   -webkit-background-clip: text;
@@ -22,17 +26,19 @@ ion-title {
   --background: rgba(148, 163, 184, 0.12);
   --color: #e2e8f0;
   border: 1px solid rgba(148, 163, 184, 0.16);
-  height: 30px;
+  height: 28px;
+  margin: 0 3px;
+  padding: 0 9px;
   font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.04em;
 
   ion-icon {
-    font-size: 14px;
+    font-size: 13px;
+    margin-right: 4px;
   }
 
   ion-label {
-    margin-left: 2px;
+    margin: 0;
   }
 }
 
@@ -41,8 +47,10 @@ ion-title {
   font-variant-numeric: tabular-nums;
 }
 
-.pause-button {
+.icon-button {
   --color: #e2e8f0;
   --background-hover: rgba(148, 163, 184, 0.14);
   --border-radius: 999px;
+  --padding-start: 6px;
+  --padding-end: 6px;
 }

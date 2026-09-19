@@ -1,14 +1,17 @@
 <ion-toolbar>
-  <ion-title>{{ title }}</ion-title>
+  <!--
+    The title sits in a start slot rather than in ion-title: in iOS mode Ionic
+    centres ion-title absolutely across the whole toolbar, so the buttons end
+    up painted on top of it.
+  -->
+  <ion-buttons slot="start">
+    <span class="app-title">{{ title }}</span>
+  </ion-buttons>
 
   <ion-buttons slot="end">
     <ion-chip class="stat-chip">
-      <ion-icon
-        name="trophy"
-        color="warning"
-        *ngFor="let i of levels"
-      ></ion-icon>
-      <ion-label>Lv <span class="stat-value">{{ level }}</span></ion-label>
+      <ion-icon name="trophy" color="warning"></ion-icon>
+      <ion-label class="stat-value">{{ level }}</ion-label>
     </ion-chip>
     <ion-chip class="stat-chip">
       <ion-icon name="star" color="primary"></ion-icon>
@@ -16,7 +19,7 @@
     </ion-chip>
 
     <ion-button
-      class="pause-button"
+      class="icon-button"
       [attr.aria-label]="isMuted ? 'Activar sonido' : 'Silenciar'"
       (click)="onToggleSound()"
     >
@@ -26,11 +29,7 @@
       ></ion-icon>
     </ion-button>
 
-    <ion-button
-      class="pause-button"
-      aria-label="Pausa"
-      (click)="onPauseOrPlay()"
-    >
+    <ion-button class="icon-button" aria-label="Pausa" (click)="onPauseOrPlay()">
       <ion-icon name="pause" aria-hidden="true"></ion-icon>
     </ion-button>
   </ion-buttons>

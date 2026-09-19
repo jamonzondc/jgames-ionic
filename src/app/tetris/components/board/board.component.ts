@@ -61,6 +61,12 @@ export class BoardComponent
   /** How long mouse events stay ignored after a touch. */
   private readonly MOUSE_AFTER_TOUCH_MS: number = 700;
 
+  /** Fading streak left behind by a hard drop. */
+  private dropTrail:
+    | { columns: number[]; fromY: number; toY: number; color: string; start: number }
+    | undefined;
+  private readonly DROP_TRAIL_MS: number = 300;
+
   constructor(
     private alertController: AlertController,
     private platform: Platform,
@@ -196,6 +202,7 @@ export class BoardComponent
   protected draw(updateHint?: boolean): void {
     if (!this.canvas || !this.context) return;
     this.drawBoard(this.board.board);
+    this.drawDropTrail();
     this.drawPiece(this.shape);
     this.drawHint(this.shape, this.board);
   }
@@ -428,10 +435,80 @@ export class BoardComponent
   private hardDrop(): void {
     if (!this.shape) return;
     this.audioService.hardDrop();
+
     this.shape.getPosition().y += this.getLastYAfterCollition();
+
+    // The streak covers the whole gesture, not just this last jump: the drag
+    // itself already walked the piece most of the way down, so measuring from
+    // here would leave a stub. Without it the piece simply vanishes from the
+    // top and reappears at the bottom — worst on the first piece, where the
+    // board is empty and the fall is longest.
+    if (this.shape.getPosition().y > this.shapeYOnTouchStart) {
+      this.startDropTrail(this.shapeYOnTouchStart);
+    }
+
     // The next frame sees it has landed and settles it, rather than leaving it
     // there for a whole drop interval.
     this.dropCounter = this.SHAPE_TIME_DOWN + 1;
+  }
+
+  private startDropTrail(fromY: number): void {
+    if (!this.shape) return;
+    const shape: ShapeModel = this.shape;
+    const columns: number[] = [];
+
+    this.tetrisService.forEachItem(shape.getPiece(), (cell, x): void => {
+      const column: number = x + shape.getPosition().x;
+      if (cell.color !== COLOR.BLACK && !columns.includes(column)) {
+        columns.push(column);
+      }
+    });
+
+    this.dropTrail = {
+      columns,
+      fromY,
+      toY: shape.getPosition().y,
+      color: shape.getColor(),
+      start: performance.now(),
+    };
+  }
+
+  /** Vertical smear from where the piece was to where it landed. */
+  private drawDropTrail(): void {
+    if (!this.dropTrail || !this.context) return;
+
+    const elapsed: number = performance.now() - this.dropTrail.start;
+    if (elapsed > this.DROP_TRAIL_MS) {
+      this.dropTrail = undefined;
+      return;
+    }
+
+    const fade: number = 1 - elapsed / this.DROP_TRAIL_MS;
+    const size: number = this.board.BLOCK_SIZE;
+    const top: number = this.dropTrail.fromY * size;
+    const bottom: number = this.dropTrail.toY * size;
+
+    const gradient: CanvasGradient = this.context.createLinearGradient(
+      0,
+      top,
+      0,
+      bottom
+    );
+    gradient.addColorStop(0, this.trailColor(0));
+    gradient.addColorStop(1, this.trailColor(0.5 * fade));
+
+    this.context.fillStyle = gradient;
+    this.dropTrail.columns.forEach((column: number): void => {
+      this.context!.fillRect(column * size + 6, top, size - 12, bottom - top);
+    });
+  }
+
+  private trailColor(alpha: number): string {
+    const value: string = String(this.dropTrail?.color ?? '#94A3B8').slice(1);
+    const red: number = parseInt(value.slice(0, 2), 16);
+    const green: number = parseInt(value.slice(2, 4), 16);
+    const blue: number = parseInt(value.slice(4, 6), 16);
+    return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
   }
 
   /**

@@ -1,27 +1,62 @@
-#container {
-  text-align: center;
-
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+ion-toolbar {
+  --background: rgba(11, 16, 32, 0.72);
+  --color: #e2e8f0;
+  --border-width: 0;
+  backdrop-filter: blur(14px);
 }
 
-#container strong {
-  font-size: 20px;
-  line-height: 26px;
+ion-title {
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-size: 15px;
+  background: linear-gradient(135deg, #a5b4fc, #22d3ee);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-#container p {
-  font-size: 16px;
-  line-height: 22px;
-
-  color: #8c8c8c;
-
-  margin: 0;
+ion-content {
+  --background: transparent;
 }
 
-#container a {
-  text-decoration: none;
+.home-backdrop {
+  min-height: 100%;
+  padding: 20px 16px 32px;
+  background: radial-gradient(
+      90% 55% at 10% 0%,
+      rgba(99, 102, 241, 0.26),
+      transparent 60%
+    ),
+    radial-gradient(70% 45% at 100% 100%, rgba(236, 72, 153, 0.18), transparent 65%),
+    linear-gradient(180deg, #0b1020 0%, #05070f 100%);
+}
+
+.home-intro {
+  margin-bottom: 20px;
+
+  h1 {
+    margin: 0 0 4px;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: #f1f5f9;
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+    color: rgba(148, 163, 184, 0.8);
+  }
+}
+
+.game-grid {
+  display: grid;
+  // One column on a phone, two once there is room for them.
+  grid-template-columns: 1fr;
+  gap: 14px;
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
 }

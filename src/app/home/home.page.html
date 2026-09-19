@@ -1,15 +1,21 @@
-<ion-header [translucent]="true">
+<ion-header [translucent]="true" class="ion-no-border">
   <ion-toolbar>
-    <ion-title> Blank </ion-title>
+    <ion-title>JGames</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <ion-grid>
-    <ion-row>
-      <ion-col *ngFor="let item of games">
-        <app-game-card [gameData]="item"></app-game-card>
-      </ion-col>
-    </ion-row>
-  </ion-grid>
+  <div class="home-backdrop">
+    <header class="home-intro">
+      <h1>Elige tu juego</h1>
+      <p>Clásicos de siempre, jugables desde el móvil.</p>
+    </header>
+
+    <div class="game-grid">
+      <app-game-card
+        *ngFor="let item of games"
+        [gameData]="item"
+      ></app-game-card>
+    </div>
+  </div>
 </ion-content>

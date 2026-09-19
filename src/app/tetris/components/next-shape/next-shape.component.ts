@@ -16,6 +16,7 @@ export class NextShapeComponent extends DrawableComponent implements OnInit {
   }
 
   public ngOnInit(): void {
+    this.showGrid = false;
     this.canvas = document.querySelector('#tetrisNextShapeId');
     this.context = this.canvas?.getContext('2d');
     if (!this.canvas) return;

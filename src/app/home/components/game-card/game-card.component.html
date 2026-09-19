@@ -1,14 +1,15 @@
-<ion-card [routerLink]="gameData.routerLink">
-  <img [alt]="gameData.name" [src]="gameData.image" />
-  <ion-card-header>
-    <ion-card-subtitle>
-      <ion-badge color="{{ gameData.state | getColorByState }}">{{
-        gameData.state
-      }}</ion-badge>
-    </ion-card-subtitle>
-    <ion-card-title>{{ gameData.name }}</ion-card-title>
-  </ion-card-header>
-  <ion-card-content>
-    {{ gameData.description }}
-  </ion-card-content>
+<ion-card class="game-card" [routerLink]="gameData.routerLink">
+  <div class="game-card__media">
+    <img [alt]="gameData.name" [src]="gameData.image" loading="lazy" />
+    <ion-badge
+      class="game-card__state"
+      color="{{ gameData.state | getColorByState }}"
+      >{{ gameData.state }}</ion-badge
+    >
+  </div>
+
+  <div class="game-card__body">
+    <h2 class="game-card__title">{{ gameData.name }}</h2>
+    <p class="game-card__text">{{ gameData.description }}</p>
+  </div>
 </ion-card>

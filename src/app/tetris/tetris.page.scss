@@ -1,46 +1,137 @@
 #wallpaper {
-  height: 100%;
-  background: black;
-  background-size: cover;
-}
-
-#tetrisNextShapeId,
-#tetrisBoardId,
-#dashboardId {
-  border: 2px solid black;
-  border-radius: 4px;
-}
-
-#dashboardId {
-  width: 100vw;
-  padding: 0 5px 0 5px;
-}
-
-.tetris-color-title {
-  font-size: 84px;
-  font-family: American Typewriter;
-  font-weight: 900;
-}
-
-.t-ofTetris {
-  color: red;
-}
-.e-ofTetris {
-  color: rgb(255, 128, 0);
-}
-.tt-ofTetris {
-  color: rgb(255, 200, 0);
-}
-.r-ofTetris {
-  color: green;
-}
-.i-ofTetris {
-  color: cyan;
-}
-.s-ofTetris {
-  color: magenta;
+  min-height: 100%;
+  // Two coloured lights over a near-black base, so the board sits on depth
+  // instead of a flat black rectangle.
+  background: radial-gradient(
+      90% 60% at 15% 0%,
+      rgba(99, 102, 241, 0.28),
+      transparent 60%
+    ),
+    radial-gradient(70% 50% at 100% 100%, rgba(236, 72, 153, 0.2), transparent 65%),
+    linear-gradient(180deg, #0b1020 0%, #05070f 100%);
 }
 
 .padding-top {
-  padding-top: 20px;
+  padding-top: 16px;
+}
+
+.board-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 24px;
+}
+
+.panel-label {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.75);
+  text-align: center;
+}
+
+.gesture-hint {
+  margin: 4px 0 0;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: rgba(148, 163, 184, 0.6);
+  text-align: center;
+  // Keyboard players do not need to be told about swipes.
+  @media (hover: hover) and (pointer: fine) {
+    display: none;
+  }
+}
+
+ion-modal#tetrisMenuId {
+  --background: transparent;
+  --box-shadow: none;
+
+  &::part(content) {
+    backdrop-filter: blur(18px);
+  }
+
+  ion-content {
+    --background: linear-gradient(
+      165deg,
+      rgba(17, 24, 45, 0.96),
+      rgba(6, 9, 18, 0.98)
+    );
+  }
+}
+
+.menu-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 100%;
+}
+
+.tetris-color-title {
+  margin: 0 0 8px;
+  font-size: clamp(48px, 16vw, 76px);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", sans-serif;
+  display: flex;
+  gap: 2px;
+
+  span {
+    // Each letter keeps its colour but gains depth and a matching glow.
+    background-image: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.95),
+      currentColor 55%
+    );
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 4px 16px currentColor);
+  }
+}
+
+.t-ofTetris {
+  color: #fb7185;
+}
+.e-ofTetris {
+  color: #fb923c;
+}
+.tt-ofTetris {
+  color: #facc15;
+}
+.r-ofTetris {
+  color: #4ade80;
+}
+.i-ofTetris {
+  color: #22d3ee;
+}
+.s-ofTetris {
+  color: #e879f9;
+}
+
+.menu-button {
+  --border-radius: 999px;
+  --padding-top: 18px;
+  --padding-bottom: 18px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 13px;
+  min-width: 200px;
+}
+
+.menu-button-primary {
+  --background: linear-gradient(135deg, #6366f1, #22d3ee);
+  --background-activated: linear-gradient(135deg, #4f46e5, #0ea5e9);
+  --color: #f8fafc;
+  --box-shadow: 0 12px 30px -12px rgba(99, 102, 241, 0.9);
+}
+
+.menu-button-ghost {
+  --border-color: rgba(148, 163, 184, 0.35);
+  --color: rgba(226, 232, 240, 0.9);
 }

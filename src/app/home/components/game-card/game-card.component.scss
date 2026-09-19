@@ -1,0 +1,79 @@
+.game-card {
+  margin: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  background: linear-gradient(
+    160deg,
+    rgba(148, 163, 184, 0.14),
+    rgba(15, 23, 42, 0.6)
+  );
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  box-shadow: 0 18px 38px -20px rgba(4, 7, 15, 0.95);
+  transition: transform 160ms ease, border-color 160ms ease;
+
+  &:active {
+    transform: scale(0.985);
+    border-color: rgba(165, 180, 252, 0.4);
+  }
+}
+
+.game-card__media {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  // Fades the artwork into the card so the title never fights the image.
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      180deg,
+      transparent 45%,
+      rgba(10, 14, 28, 0.85) 100%
+    );
+  }
+}
+
+.game-card__state {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.game-card__body {
+  padding: 12px 16px 16px;
+}
+
+.game-card__title {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.game-card__text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(148, 163, 184, 0.85);
+  // Long blurbs would otherwise make one card several screens tall.
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

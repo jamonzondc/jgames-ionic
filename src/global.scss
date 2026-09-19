@@ -28,3 +28,36 @@
 ion-modal {
   --border-radius: 4px;
 }
+
+/*
+ * Dark theme, always. This is a game: it is designed against a dark board and
+ * a light system theme would leave the chrome pale around it.
+ */
+:root {
+  --ion-background-color: #05070f;
+  --ion-background-color-rgb: 5, 7, 15;
+  --ion-text-color: #e2e8f0;
+  --ion-text-color-rgb: 226, 232, 240;
+  --ion-toolbar-background: #0b1020;
+  --ion-card-background: #0f172a;
+  --ion-item-background: #0f172a;
+  --ion-border-color: rgba(148, 163, 184, 0.16);
+
+  --ion-color-primary: #6366f1;
+  --ion-color-primary-rgb: 99, 102, 241;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #575ad4;
+  --ion-color-primary-tint: #7375f2;
+
+  --ion-color-tertiary: #22d3ee;
+  --ion-color-tertiary-rgb: 34, 211, 238;
+  --ion-color-tertiary-contrast: #04121a;
+  --ion-color-tertiary-contrast-rgb: 4, 18, 26;
+  --ion-color-tertiary-shade: #1eb9d1;
+  --ion-color-tertiary-tint: #38d7f0;
+}
+
+ion-modal {
+  --border-radius: 20px;
+}

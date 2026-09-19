@@ -1,89 +1,67 @@
-<ion-header [translucent]="true">
+<ion-header [translucent]="true" class="ion-no-border">
   <app-header title="Tetris" (onPauseGame)="onPauseGame()"> </app-header>
 </ion-header>
 
 <ion-content [fullscreen]="true">
   <div id="wallpaper">
-    <ion-grid class="ion-no-margin ion-no-padding padding-top">
-      <ion-row
-        class="ion-justify-content-center ion-align-items-center ion-no-margin ion-no-padding"
-      >
-        <ion-col
-          size="auto"
-          class="ion-align-self-end ion-no-margin ion-no-padding"
-        >
-          <app-next-shape
-            [isPaused]="isModalOpen"
-            [board]="nextShapesBoard"
-          ></app-next-shape>
-        </ion-col>
-      </ion-row>
-      <ion-row
-        class="ion-justify-content-center ion-align-items-center ion-no-margin ion-no-padding"
-      >
-        <ion-col
-          size="auto"
-          class="ion-no-margin ion-no-padding ion-align-self-end"
-        >
-          <app-board
-            [isPaused]="isModalOpen"
-            [board]="mainBoard"
-            (gameOverEmit)="gameOver()"
-          ></app-board>
-        </ion-col>
-      </ion-row>
-    </ion-grid>
+    <div class="board-stack padding-top">
+      <div>
+        <p class="panel-label">Next</p>
+        <app-next-shape
+          [isPaused]="isModalOpen"
+          [board]="nextShapesBoard"
+        ></app-next-shape>
+      </div>
+
+      <div>
+        <app-board
+          [isPaused]="isModalOpen"
+          [board]="mainBoard"
+          (gameOverEmit)="gameOver()"
+        ></app-board>
+        <p class="gesture-hint">
+          Arrastra para mover · Toca para rotar · Desliza abajo para soltar
+        </p>
+      </div>
+    </div>
+
     <ion-modal id="tetrisMenuId" [isOpen]="isModalOpen">
       <ng-template>
         <ion-content class="ion-padding">
-          <ion-grid>
-            <ion-row class="ion-justify-content-center">
-              <ion-col size="auto">
-                <h1 class="tetris-color-title">
-                  <span class="t-ofTetris">T</span>
-                  <span class="e-ofTetris">E</span>
-                  <span class="tt-ofTetris">T</span>
-                  <span class="r-ofTetris">R</span>
-                  <span class="i-ofTetris">I</span>
-                  <span class="s-ofTetris">S</span>
-                </h1>
-              </ion-col>
-            </ion-row>
-            <ion-row class="ion-margin ion-justify-content-center">
-              <ion-col size="6">
-                <ion-button
-                  shape="round"
-                  expand="full"
-                  color="primary"
-                  [disabled]="isGameOver"
-                  (click)="isModalOpen=false"
-                  >Resume</ion-button
-                >
-              </ion-col>
-            </ion-row>
-            <ion-row class="ion-margin ion-justify-content-center">
-              <ion-col size="6">
-                <ion-button
-                  expand="full"
-                  shape="round"
-                  [fill]="isGameOver?'solid':'outline'"
-                  (click)="restart()"
-                  >Restart</ion-button
-                >
-              </ion-col>
-            </ion-row>
-            <ion-row class="ion-margin ion-justify-content-center">
-              <ion-col size="6">
-                <ion-button
-                  shape="round"
-                  expand="full"
-                  fill="outline"
-                  (click)="cancel()"
-                  >Exit</ion-button
-                >
-              </ion-col>
-            </ion-row>
-          </ion-grid>
+          <div class="menu-card">
+            <h1 class="tetris-color-title">
+              <span class="t-ofTetris">T</span>
+              <span class="e-ofTetris">E</span>
+              <span class="tt-ofTetris">T</span>
+              <span class="r-ofTetris">R</span>
+              <span class="i-ofTetris">I</span>
+              <span class="s-ofTetris">S</span>
+            </h1>
+
+            <ion-button
+              class="menu-button menu-button-primary"
+              shape="round"
+              [disabled]="isGameOver"
+              (click)="isModalOpen=false"
+              >Resume</ion-button
+            >
+            <ion-button
+              class="menu-button"
+              [class.menu-button-primary]="isGameOver"
+              [class.menu-button-ghost]="!isGameOver"
+              shape="round"
+              [fill]="isGameOver?'solid':'outline'"
+              (click)="restart()"
+              >Restart</ion-button
+            >
+            <ion-button
+              class="menu-button menu-button-ghost"
+              shape="round"
+              fill="outline"
+              (click)="cancel()"
+              >Exit</ion-button
+            >
+          </div>
         </ion-content>
       </ng-template>
     </ion-modal>

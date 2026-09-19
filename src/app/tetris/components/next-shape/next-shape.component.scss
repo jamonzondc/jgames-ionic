@@ -1,8 +1,19 @@
-#tetrisNextShapeId {
-  border: 2px solid black;
-  border-radius: 4px;
+:host {
+  display: block;
 }
+
 .canvasWrapper {
-  padding: 6px;
-  border-radius: 6px 6px 0 0;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  backdrop-filter: blur(8px);
+}
+
+#tetrisNextShapeId {
+  display: block;
+  width: min(88vw, 340px);
+  height: auto;
+  border-radius: 8px;
+  background: transparent;
 }

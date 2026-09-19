@@ -8,7 +8,8 @@ import { TetrisService } from '../../services';
 import { BoardComponent } from './board.component';
 
 /**
- * Touch gestures: drag moves sideways, tap rotates, double tap hard drops.
+ * Touch gestures: drag sideways moves, drag down soft drops, flick down
+ * hard drops, tap rotates.
  * The handlers are driven directly so the test never needs a canvas or the
  * animation loop.
  */
@@ -123,31 +124,75 @@ describe('BoardComponent touch gestures', () => {
     expect(component.shape!.getPiece()).toBe(before);
   });
 
-  it('hard drops on a double tap and undoes the first tap rotation', () => {
-    const before = component.shape!.getPiece();
+  it('soft drops while the finger drags downwards', () => {
+    component.onTouchStart(touchEvent(100, 100));
+    jest.advanceTimersByTime(200);
+    // Three blocks down, slowly enough not to be a flick.
+    component.onTouchMove(touchEvent(100, 220));
 
+    expect(component.shape!.getPosition().y).toBe(3);
+  });
+
+  it('does not pull the shape back up when the finger returns', () => {
+    component.onTouchStart(touchEvent(100, 100));
+    jest.advanceTimersByTime(200);
+    component.onTouchMove(touchEvent(100, 220));
+    jest.advanceTimersByTime(200);
+    component.onTouchMove(touchEvent(100, 100));
+
+    expect(component.shape!.getPosition().y).toBe(3);
+  });
+
+  it('hard drops on a downwards flick', () => {
+    component.onTouchStart(touchEvent(100, 100));
+    jest.advanceTimersByTime(20);
+    component.onTouchMove(touchEvent(100, 200));
+    jest.advanceTimersByTime(20);
+    component.onTouchMove(touchEvent(100, 340));
+    component.onTouchEnd(releaseEvent());
+
+    // T piece is 2 rows tall on a 15 row board, so it lands on row 13.
+    expect(component.shape!.getPosition().y).toBe(13);
+  });
+
+  it('does not hard drop on a slow downwards drag', () => {
+    component.onTouchStart(touchEvent(100, 100));
+    jest.advanceTimersByTime(400);
+    component.onTouchMove(touchEvent(100, 180));
+    jest.advanceTimersByTime(400);
+    component.onTouchMove(touchEvent(100, 220));
+    component.onTouchEnd(releaseEvent());
+
+    expect(component.shape!.getPosition().y).toBe(3);
+  });
+
+  it('does not hard drop on a fast sideways drag', () => {
+    component.onTouchStart(touchEvent(100, 300));
+    jest.advanceTimersByTime(20);
+    component.onTouchMove(touchEvent(240, 310));
+    component.onTouchEnd(releaseEvent());
+
+    expect(component.shape!.getPosition().y).toBe(0);
+    expect(component.shape!.getPosition().x).toBe(7);
+  });
+
+  it('keeps a sideways drag sideways even if the finger drifts down', () => {
+    component.onTouchStart(touchEvent(100, 100));
+    jest.advanceTimersByTime(100);
+    component.onTouchMove(touchEvent(180, 130));
+    jest.advanceTimersByTime(100);
+    // Now mostly vertical, but the gesture already committed to sideways.
+    component.onTouchMove(touchEvent(190, 300));
+
+    expect(component.shape!.getPosition().y).toBe(0);
+  });
+
+  it('rotates twice on two quick taps instead of dropping', () => {
     component.onTouchStart(touchEvent(100, 300));
     jest.advanceTimersByTime(50);
     component.onTouchEnd(releaseEvent());
 
     jest.advanceTimersByTime(100);
-
-    component.onTouchStart(touchEvent(100, 300));
-    jest.advanceTimersByTime(50);
-    component.onTouchEnd(releaseEvent());
-
-    // T piece is 2 rows tall on a 15 row board, so it lands on row 13.
-    expect(component.shape!.getPosition().y).toBe(13);
-    expect(component.shape!.getPiece()).toBe(before);
-    expect(component.shape!.getPieceWidth()).toBe(3);
-  });
-
-  it('treats two slow taps as two rotations, not a drop', () => {
-    component.onTouchStart(touchEvent(100, 300));
-    jest.advanceTimersByTime(50);
-    component.onTouchEnd(releaseEvent());
-
-    jest.advanceTimersByTime(1000);
 
     component.onTouchStart(touchEvent(100, 300));
     jest.advanceTimersByTime(50);

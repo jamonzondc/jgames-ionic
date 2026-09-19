@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, OnDestroy } from '@angular/core';
 
 interface ToneOptions {
   /** Starting pitch in Hz. */
@@ -25,7 +25,7 @@ interface ToneOptions {
  * key press and the sound starts from there.
  */
 @Injectable({ providedIn: 'root' })
-export class AudioService {
+export class AudioService implements OnDestroy {
   private static readonly MUTED_KEY: string = 'jgames.muted';
   private static readonly MUSIC_VOLUME: number = 0.28;
   /** Sideways moves repeat fast; without this they turn into a rattle. */
@@ -39,11 +39,54 @@ export class AudioService {
   private gameRunning: boolean = false;
   private context: AudioContext | undefined;
   private lastMoveTime: number = 0;
+  private readonly onHidden = (): void => this.onPageHidden();
+  private readonly onVisible = (): void => this.onPageVisible();
+  private readonly onVisibilityChange = (): void =>
+    document.hidden ? this.onPageHidden() : this.onPageVisible();
 
   constructor() {
     this.music.loop = true;
     this.music.volume = AudioService.MUSIC_VOLUME;
     this.music.preload = 'auto';
+    this.followPageVisibility();
+  }
+
+  /**
+   * Switching to another app must take the soundtrack with it. On a phone the
+   * page keeps living in the background, so without this the music plays on
+   * over whatever the player moved to.
+   */
+  private followPageVisibility(): void {
+    if (typeof document === 'undefined') return;
+
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
+
+    // Safari does not always report a visibility change when the app is
+    // swiped away, so the window's own events back it up.
+    window.addEventListener('pagehide', this.onHidden);
+    window.addEventListener('blur', this.onHidden);
+    window.addEventListener('focus', this.onVisible);
+  }
+
+  public ngOnDestroy(): void {
+    if (typeof document === 'undefined') return;
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    window.removeEventListener('pagehide', this.onHidden);
+    window.removeEventListener('blur', this.onHidden);
+    window.removeEventListener('focus', this.onVisible);
+    this.music.pause();
+  }
+
+  private onPageHidden(): void {
+    this.music.pause();
+    // Effects run through Web Audio, which keeps its own clock.
+    this.context?.suspend().catch((): void => undefined);
+  }
+
+  private onPageVisible(): void {
+    if (typeof document !== 'undefined' && document.hidden) return;
+    this.resume();
+    this.context?.resume().catch((): void => undefined);
   }
 
   public isMuted(): boolean {

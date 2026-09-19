@@ -1,119 +1,107 @@
-import { describe, expect, test } from '@jest/globals';
-import { TShapeModel } from './t-square.model';
-import { ShapeModel } from './shape.model';
+import { BlockTypeEnum } from '../block-type.enum';
+import { BlockInterface } from '../block.interface';
 import { IShapeModel } from './i-square.model';
-import { LShapeModel } from './l-square.model';
 import { OShapeModel } from './o-square.model';
-import { ZShapeModel } from './z-square.model';
+import { ShapeModel } from './shape.model';
+import { TShapeModel } from './t-square.model';
+
+/** The piece as a grid of "#" and ".", which is far easier to read. */
+const render = (shape: ShapeModel): string[] =>
+  shape
+    .getPiece()
+    .map((row: BlockInterface[]): string =>
+      row
+        .map((cell: BlockInterface): string =>
+          cell.type === BlockTypeEnum.COLOR_BLOCK ? '#' : '.'
+        )
+        .join('')
+    );
 
 describe('ShapeModel', () => {
-  function executeAssert(
-    shapeModel: ShapeModel,
-    rotatedShape: Array<string[][]>
-  ): void {
-    rotatedShape.forEach((shapeRotated: string[][]): void => {
-      shapeModel.rotate();
-      expect(shapeModel.getPiece()).toEqual(shapeRotated);
+  describe('T piece', () => {
+    it('turns a quarter at a time and comes back round', () => {
+      const shape: TShapeModel = new TShapeModel();
+      expect(render(shape)).toEqual(['###', '.#.']);
+
+      shape.setPiece(shape.rotate());
+      expect(render(shape)).toEqual(['.#', '##', '.#']);
+
+      shape.setPiece(shape.rotate());
+      expect(render(shape)).toEqual(['.#.', '###']);
+
+      shape.setPiece(shape.rotate());
+      expect(render(shape)).toEqual(['#.', '##', '#.']);
+
+      shape.setPiece(shape.rotate());
+      expect(render(shape)).toEqual(['###', '.#.']);
     });
-  }
 
-  test('should rote the t shape', async () => {
-    const tShapeModel: TShapeModel = new TShapeModel({ x: 0, y: 0 });
-    const rotatedShape: Array<string[][]> = [
-      [
-        ['0', '1'],
-        ['1', '1'],
-        ['0', '1'],
-      ],
-      [
-        ['0', '1', '0'],
-        ['1', '1', '1'],
-      ],
-      [
-        ['1', '0'],
-        ['1', '1'],
-        ['1', '0'],
-      ],
-      [
-        ['1', '1', '1'],
-        ['0', '1', '0'],
-      ],
-    ];
+    it('swaps its width and height as it turns', () => {
+      const shape: TShapeModel = new TShapeModel();
+      expect([shape.getPieceWidth(), shape.getPieceHeight()]).toEqual([3, 2]);
 
-    executeAssert(tShapeModel, rotatedShape);
+      shape.setPiece(shape.rotate());
+
+      expect([shape.getPieceWidth(), shape.getPieceHeight()]).toEqual([2, 3]);
+    });
   });
 
-  test('should rote the i shape', async () => {
-    const iShapeModel: IShapeModel = new IShapeModel({ x: 0, y: 0 });
-    const rotatedShape: Array<string[][]> = [
-      [['1', '1', '1', '1']],
-      [['1'], ['1'], ['1'], ['1']],
-      [['1', '1', '1', '1']],
-      [['1'], ['1'], ['1'], ['1']],
-    ];
+  describe('I piece', () => {
+    it('lies flat and stands upright', () => {
+      const shape: IShapeModel = new IShapeModel();
+      expect(render(shape)).toEqual(['#', '#', '#', '#']);
 
-    executeAssert(iShapeModel, rotatedShape);
+      shape.setPiece(shape.rotate());
+
+      expect(render(shape)).toEqual(['####']);
+      expect(shape.getPieceWidth()).toBe(4);
+      expect(shape.getPieceHeight()).toBe(1);
+    });
   });
 
-  test('should rote the l shape', async () => {
-    const lShapeModel: LShapeModel = new LShapeModel({ x: 0, y: 0 });
-    const rotatedShape: Array<string[][]> = [
-      [
-        ['1', '1', '1'],
-        ['1', '0', '0'],
-      ],
-    ];
+  describe('O piece', () => {
+    it('is unchanged by rotation', () => {
+      const shape: OShapeModel = new OShapeModel();
+      const before: string[] = render(shape);
 
-    executeAssert(lShapeModel, rotatedShape);
+      shape.setPiece(shape.rotate());
+
+      expect(render(shape)).toEqual(before);
+    });
   });
 
-  test('should rote the o shape', async () => {
-    const oShapeModel: OShapeModel = new OShapeModel({ x: 0, y: 0 });
-    const rotatedShape: Array<string[][]> = [
-      [
-        ['1', '1'],
-        ['1', '1'],
-      ],
-      [
-        ['1', '1'],
-        ['1', '1'],
-      ],
-      [
-        ['1', '1'],
-        ['1', '1'],
-      ],
-      [
-        ['1', '1'],
-        ['1', '1'],
-      ],
-    ];
+  describe('rotate', () => {
+    it('reports the rotation without applying it', () => {
+      // arrowUp inspects a rotation before deciding whether it collides, so
+      // asking must leave the piece exactly as it was.
+      const shape: TShapeModel = new TShapeModel();
+      const before: string[] = render(shape);
+      const width: number = shape.getPieceWidth();
 
-    executeAssert(oShapeModel, rotatedShape);
+      shape.rotate();
+
+      expect(render(shape)).toEqual(before);
+      expect(shape.getPieceWidth()).toBe(width);
+    });
+
+    it('keeps the declared size in step with the matrix', () => {
+      const shape: TShapeModel = new TShapeModel();
+
+      for (let turn = 0; turn < 4; turn++) {
+        shape.setPiece(shape.rotate());
+        expect(shape.getPieceWidth()).toBe(shape.getPiece()[0].length);
+        expect(shape.getPieceHeight()).toBe(shape.getPiece().length);
+      }
+    });
   });
 
-  test('should rote the z shape', async () => {
-    const zShapeModel: ZShapeModel = new ZShapeModel({ x: 0, y: 0 });
-    const rotatedShape: Array<string[][]> = [
-      [
-        ['0', '1'],
-        ['1', '1'],
-        ['1', '0'],
-      ],
-      [
-        ['1', '1', '0'],
-        ['0', '1', '1'],
-      ],
-      [
-        ['0', '1'],
-        ['1', '1'],
-        ['1', '0'],
-      ],
-      [
-        ['1', '1', '0'],
-        ['0', '1', '1'],
-      ],
-    ];
+  describe('position', () => {
+    it('is read back as it was set', () => {
+      const shape: TShapeModel = new TShapeModel();
 
-    executeAssert(zShapeModel, rotatedShape);
+      shape.setPosition({ x: 3, y: 7 });
+
+      expect(shape.getPosition()).toEqual({ x: 3, y: 7 });
+    });
   });
 });

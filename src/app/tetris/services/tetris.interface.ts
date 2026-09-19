@@ -7,6 +7,8 @@ export interface TetrisInterface {
   buildBoard(height: number, width: number, blockSize: number): BoardInterface;
   getShapes(): Observable<Array<ShapeModel>>;
   gameOver(board: Array<BlockInterface[]>): boolean;
+  hasLanded(shape: ShapeModel, board: BoardInterface): boolean;
+  fits(shape: ShapeModel, board: BoardInterface): boolean;
   getRamdonPiece(): ShapeModel;
   removeCompletedRows(board: BoardInterface): Promise<void>;
   checkCollition(

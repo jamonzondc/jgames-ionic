@@ -104,29 +104,12 @@ export class BoardComponent
     // the first. Keep painting, though — the clear is animated.
     if (!this.isPaused && !this.isClearingRows) {
       this.calcTimeToRenderShape(time);
-      if (
-        this.shape &&
-        this.tetrisService.checkCollition(
-          this.shape.getPosition().y,
-          this.shape.getPosition().x,
-          this.shape.getPiece(),
-          this.board,
-          this.shape.getPieceWidth(),
-          this.board.BOARD_WIDTH
-        )
-      ) {
-        this.shape.getPosition().y--;
-
+      if (this.shape && this.tetrisService.hasLanded(this.shape, this.board)) {
         this.SHAPE_TIME_DOWN = 1000;
         // await this.getShapeTimeToDown();
 
         this.tetrisService.solidifyPiece(this.shape, this.board.board);
         this.audioService.lock();
-
-        if (this.tetrisService.gameOver(this.board.board)) {
-          this.finishGame();
-          return;
-        }
 
         this.clearRowsThenNextShape();
         // this.aux = true;
@@ -149,8 +132,20 @@ export class BoardComponent
 
     this.tetrisService.removeCompletedRows(this.board).then((): void => {
       this.isClearingRows = false;
-      this.shape = this.tetrisService.getOneShape(this.board.BOARD_WIDTH);
+
+      const next: ShapeModel | undefined = this.tetrisService.getOneShape(
+        this.board.BOARD_WIDTH
+      );
       this.tetrisService.pushNextShape();
+
+      // The game is over when the next piece has nowhere to appear — not
+      // merely because some block reached the top row, which an upright piece
+      // can do with most of the board still free.
+      if (next && !this.tetrisService.fits(next, this.board)) {
+        this.finishGame();
+        return;
+      }
+      this.shape = next;
     });
   }
 
@@ -177,7 +172,9 @@ export class BoardComponent
     this.lastTime = time;
     this.dropCounter += deltaTime;
     if (this.dropCounter > this.SHAPE_TIME_DOWN && this.shape) {
-      this.shape.getPosition().y++;
+      // Goes through arrowDown so the piece never steps into an occupied
+      // square and has to be walked back out of it.
+      this.tetrisService.arrowDown(this.shape, this.board);
       this.dropCounter = 0;
     }
   }
@@ -432,8 +429,8 @@ export class BoardComponent
     if (!this.shape) return;
     this.audioService.hardDrop();
     this.shape.getPosition().y += this.getLastYAfterCollition();
-    // Let the next frame push it one row further so it collides and solidifies
-    // right away instead of hanging there for a whole drop interval.
+    // The next frame sees it has landed and settles it, rather than leaving it
+    // there for a whole drop interval.
     this.dropCounter = this.SHAPE_TIME_DOWN + 1;
   }
 

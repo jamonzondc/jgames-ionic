@@ -1,9 +1,16 @@
 #tetrisBoardId {
   border: 2px solid black;
   border-radius: 4px;
+  // Gestures on the board are ours: no scrolling, pinch-zoom, double-tap zoom
+  // or blue tap highlight stealing them on a touch device.
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .canvasWrapper {
   padding: 6px;
   border-radius: 0 0 6px 6px;
+  touch-action: none;
 }
